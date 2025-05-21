@@ -13,6 +13,7 @@ from langchain.prompts import (
   SystemMessagePromptTemplate,
   HumanMessagePromptTemplate,
 )
+from langchain_core.runnables import RunnableLambda
 from structure import Structure
 if os.path.exists('.env'):
     dotenv.load_dotenv()
@@ -58,9 +59,10 @@ def main():
 })
     ])
 
-    chain = prompt_template | llm
+    chain = prompt_template | llm | output_json_parser
 
-    for idx, d in enumerate(data):
+
+    def format_outputs(d):
         try:
             response: Structure = chain.invoke({
                 "language": language,
@@ -76,10 +78,41 @@ def main():
                  "result": "Error",
                  "conclusion": "Error"
             }
-        with open(args.data.replace('.jsonl', f'_AI_enhanced_{language}.jsonl'), "a") as f:
+        return d
+
+    formatted_chain = (
+        RunnableLambda(
+            lambda x: format_outputs(x)
+        )
+        .with_retry(stop_after_attempt=3)
+        .with_config(max_concurrency=512)
+    )
+    formatted_outputs = formatted_chain.batch(data)
+      
+    with open(args.data.replace('.jsonl', f'_AI_enhanced_{language}.jsonl'), "w") as f:
+        for d in formatted_outputs:
             f.write(json.dumps(d) + "\n")
 
-        print(f"Finished {idx+1}/{len(data)}", file=sys.stderr)
+    # for idx, d in enumerate(data):
+    #     try:
+    #         response: Structure = chain.invoke({
+    #             "language": language,
+    #             "content": d['summary']
+    #         })
+    #         d['AI'] = response.model_dump()
+    #     except langchain_core.exceptions.OutputParserException as e:
+    #         print(f"{d['id']} has an error: {e}", file=sys.stderr)
+    #         d['AI'] = {
+    #              "tldr": "Error",
+    #              "motivation": "Error",
+    #              "method": "Error",
+    #              "result": "Error",
+    #              "conclusion": "Error"
+    #         }
+    #     with open(args.data.replace('.jsonl', f'_AI_enhanced_{language}.jsonl'), "a") as f:
+    #         f.write(json.dumps(d) + "\n")
+
+    #     print(f"Finished {idx+1}/{len(data)}", file=sys.stderr)
 
 if __name__ == "__main__":
     main()
