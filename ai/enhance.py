@@ -6,6 +6,7 @@ import dotenv
 import argparse
 
 import langchain_core.exceptions
+from langchain_core.output_parsers import PydanticOutputParser
 from langchain_openai import ChatOpenAI
 from langchain.prompts import (
   ChatPromptTemplate,
@@ -45,11 +46,16 @@ def main():
 
     print('Open:', args.data, file=sys.stderr)
 
-    llm = ChatOpenAI(model=model_name).with_structured_output(Structure, method="function_calling")
+    llm = ChatOpenAI(model=model_name)
+
+    output_json_parser = PydanticOutputParser(pydantic_object=Structure)
+  
     print('Connect to:', model_name, file=sys.stderr)
     prompt_template = ChatPromptTemplate.from_messages([
         SystemMessagePromptTemplate.from_template(system),
-        HumanMessagePromptTemplate.from_template(template=template)
+        HumanMessagePromptTemplate.from_template(template=template,partial_variables={
+    "format_instructions": output_json_parser.get_format_instructions()
+})
     ])
 
     chain = prompt_template | llm
