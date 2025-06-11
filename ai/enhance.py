@@ -38,12 +38,24 @@ def main():
 
     seen_ids = set()
     unique_data = []
+    preferable_data = []
     for item in data:
         if item['id'] not in seen_ids:
             seen_ids.add(item['id'])
             unique_data.append(item)
+    preference = os.environ.get('CATEGORIES', 'cs.CV, cs.CL').split(',')
+    preference = set(map(lambda x: x.strip(), preference))
+    for item in unique_data:
+        record_cate = set(item["categories"])
+        if len(preference & record_cate) == 0：
+            continue
+        preferable_data.append(item)
+    
+        
+        
+        
 
-    data = unique_data
+    data = preferable_data
 
     print('Open:', args.data, file=sys.stderr)
 
