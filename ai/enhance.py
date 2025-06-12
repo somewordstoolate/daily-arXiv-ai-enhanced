@@ -47,7 +47,7 @@ def main():
     preference = set(map(lambda x: x.strip(), preference))
     for item in unique_data:
         record_cate = set(item["categories"])
-        if len(preference & record_cate) == 0：
+        if len(preference & record_cate) == 0:
             continue
         preferable_data.append(item)
     
