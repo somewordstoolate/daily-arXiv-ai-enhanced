@@ -5,7 +5,7 @@ name: arXiv-daily-ai-enhanced
 
 on:
   schedule:
-    - cron: "30 23 * * *"
+    - cron: '30 16 * * 0-4' # 00:30 Beijing time every Monday to Friday
   workflow_dispatch:
 
 
